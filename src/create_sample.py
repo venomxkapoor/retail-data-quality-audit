@@ -24,6 +24,35 @@ def select_extra_rows(data, already_selected, condition, number, random_state):
     return list(pd.Series(candidates).sample(n=take, random_state=random_state))
 
 
+def select_complete_duplicate_groups(
+    data, already_selected, minimum_rows, random_state, target_rows=TARGET_ROWS
+):
+    """Select complete unused duplicate groups without exceeding the target."""
+    duplicate_rows = data.duplicated(keep=False)
+    row_signatures = pd.util.hash_pandas_object(data, index=False)
+    signatures = row_signatures[duplicate_rows].drop_duplicates()
+    signatures = signatures.sample(frac=1, random_state=random_state)
+
+    selected_groups = []
+    for signature in signatures:
+        group_indexes = list(data.index[row_signatures.eq(signature)])
+        unused_group = [index for index in group_indexes if index not in already_selected]
+        remaining_capacity = target_rows - len(already_selected) - len(selected_groups)
+
+        # Adding only part of a duplicate group would weaken traceability.
+        if len(unused_group) >= 2 and len(unused_group) <= remaining_capacity:
+            selected_groups.extend(unused_group)
+        if len(selected_groups) >= minimum_rows or remaining_capacity < 2:
+            break
+    return selected_groups
+
+
+def add_rows_up_to_target(selected, new_rows, target_rows=TARGET_ROWS):
+    """Append rows in their sampled order without exceeding the target size."""
+    remaining_capacity = max(target_rows - len(selected), 0)
+    selected.extend(new_rows[:remaining_capacity])
+
+
 def create_sample(source_file, output_file, selection_log_file):
     data = pd.read_excel(source_file)
 
@@ -32,32 +61,27 @@ def create_sample(source_file, output_file, selection_log_file):
 
     # Add authentic review cases so the small portfolio sample demonstrates
     # several important rules. No source values are changed.
-    duplicate_rows = data.duplicated(keep=False)
-    row_signatures = pd.util.hash_pandas_object(data, index=False)
-    duplicate_signatures = row_signatures[duplicate_rows].drop_duplicates()
-    duplicate_signatures = duplicate_signatures.sample(
-        frac=1, random_state=SEED + 1
+    duplicate_indexes = select_complete_duplicate_groups(
+        data, selected, minimum_rows=160, random_state=SEED + 1
     )
-    duplicate_indexes = []
-    for signature in duplicate_signatures:
-        group_indexes = list(data.index[row_signatures.eq(signature)])
-        unused_group = [index for index in group_indexes if index not in selected]
-        if len(unused_group) >= 2:
-            duplicate_indexes.extend(unused_group)
-        if len(duplicate_indexes) >= 160:
-            break
     selected += duplicate_indexes
 
     invoice_text = data["InvoiceNo"].astype(str).str.upper()
     non_cancel_negative = (data["Quantity"] < 0) & ~invoice_text.str.startswith("C")
-    selected += select_extra_rows(data, selected, non_cancel_negative, 140, SEED + 2)
+    extra_rows = select_extra_rows(
+        data, selected, non_cancel_negative, 140, SEED + 2
+    )
+    add_rows_up_to_target(selected, extra_rows)
 
-    selected += select_extra_rows(
+    extra_rows = select_extra_rows(
         data, selected, data["UnitPrice"] <= 0, 100, SEED + 3
     )
-    selected += select_extra_rows(
+    add_rows_up_to_target(selected, extra_rows)
+
+    extra_rows = select_extra_rows(
         data, selected, data["Description"].isna(), 100, SEED + 4
     )
+    add_rows_up_to_target(selected, extra_rows)
 
     # Overlap between groups can leave fewer than 5,000 rows. Fill the gap
     # with additional random source rows.
@@ -68,7 +92,7 @@ def create_sample(source_file, output_file, selection_log_file):
         fill = pd.Series(available).sample(n=remaining, random_state=SEED + 5)
         selected += list(fill)
 
-    selected = sorted(selected[:TARGET_ROWS])
+    selected = sorted(selected)
     sample = data.loc[selected].copy()
 
     Path(output_file).parent.mkdir(parents=True, exist_ok=True)

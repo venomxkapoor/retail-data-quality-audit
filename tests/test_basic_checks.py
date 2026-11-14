@@ -13,6 +13,7 @@ sys.path.insert(0, str(PROJECT_DIR / "src"))
 from audit import build_flags, make_exception_log, make_reporting_view  # noqa: E402
 from generate_report import build_key_findings, register_report_fonts  # noqa: E402
 from generate_workbook import build_workbook  # noqa: E402
+from create_sample import select_complete_duplicate_groups  # noqa: E402
 
 
 def small_data():
@@ -89,9 +90,41 @@ class BasicChecksTest(unittest.TestCase):
             }
         )
         findings = build_key_findings(summary)
-        self.assertIn("9 rows; 30.0%", findings)
+        self.assertIn("missing customer IDs (9 rows; 30.0%)", findings)
         self.assertIn("8 non-positive-price rows", findings)
         self.assertNotIn("1,433", findings)
+
+    def test_pdf_findings_use_the_actual_highest_frequency_rule(self):
+        summary = pd.DataFrame(
+            {
+                "Rule": [
+                    "missing_customer_id",
+                    "non_positive_unit_price",
+                    "missing_description",
+                    "negative_quantity_non_cancellation",
+                    "potential_duplicate_line",
+                    "zero_quantity",
+                    "cancellation_quantity_mismatch",
+                    "invalid_or_out_of_range_date",
+                ],
+                "AffectedRows": [4, 12, 3, 2, 1, 0, 0, 0],
+                "AffectedPercent": [0.04, 0.12, 0.03, 0.02, 0.01, 0, 0, 0],
+            }
+        )
+        findings = build_key_findings(summary)
+        self.assertIn("non-positive-price rows (12 rows; 12.0%)", findings)
+        self.assertNotIn("Missing CustomerID was the most common flag", findings)
+
+    def test_oversized_duplicate_group_is_not_partially_selected(self):
+        data = pd.DataFrame({"value": ["same"] * 4})
+        selected = select_complete_duplicate_groups(
+            data,
+            already_selected=[],
+            minimum_rows=2,
+            random_state=1,
+            target_rows=3,
+        )
+        self.assertEqual(selected, [])
 
     def test_pdf_fonts_are_discovered_without_a_fixed_linux_path(self):
         font_paths = register_report_fonts()

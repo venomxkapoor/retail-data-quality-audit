@@ -41,6 +41,10 @@ invented or edited.
    random source rows.
 5. Sort selected records by their original source row number.
 
+Complete duplicate groups are added only when the whole group fits inside the
+5,000-row target. Later enrichment selections are capped in their sampled order,
+so the script never silently truncates part of a selected duplicate group.
+
 This is a **deliberately enriched audit sample**. It is useful for demonstrating
 validation logic, but its issue percentages are not estimates of the full
 dataset. `data/sample_source_rows.csv` records the original workbook row for
@@ -154,3 +158,9 @@ tests/      small tests for the core business rules
   current business performance.
 - The positive-item sales view supports one defined reporting purpose. Other
   purposes would require different inclusion rules.
+
+## Licensing note
+
+`LICENSE_DATA.md` records the UCI dataset's CC BY 4.0 attribution and licence.
+It does not apply a separate software licence to the project code; no additional
+permission for code reuse is granted unless the repository owner states one.

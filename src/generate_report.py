@@ -68,18 +68,52 @@ def readable_list(items, conjunction="and"):
 
 def build_key_findings(summary):
     """Build the findings paragraph entirely from the audit summary."""
-    missing_count, missing_percent = rule_result(summary, "missing_customer_id")
+    labels = {
+        "missing_description": "missing descriptions",
+        "missing_customer_id": "missing customer IDs",
+        "potential_duplicate_line": "duplicate-looking rows",
+        "zero_quantity": "zero quantities",
+        "negative_quantity_non_cancellation": "negative-quantity non-cancellations",
+        "non_positive_unit_price": "non-positive-price rows",
+        "cancellation_quantity_mismatch": "cancellation/quantity mismatches",
+        "invalid_or_out_of_range_date": "invalid or out-of-range dates",
+    }
+    explanations = {
+        "missing_customer_id": (
+            "This limits customer-level analysis but does not prevent aggregate "
+            "product or country reporting."
+        ),
+        "missing_description": "These lines are harder to review and group by product.",
+        "potential_duplicate_line": (
+            "These lines require investigation rather than automatic deletion."
+        ),
+        "zero_quantity": "These lines have no clear value in the defined sales view.",
+        "negative_quantity_non_cancellation": (
+            "These may be adjustments and require separate review."
+        ),
+        "non_positive_unit_price": (
+            "These cannot be treated as ordinary positive-price sales."
+        ),
+        "cancellation_quantity_mismatch": (
+            "The invoice marker and quantity direction disagree."
+        ),
+        "invalid_or_out_of_range_date": (
+            "These lines fall outside the defined reporting period."
+        ),
+    }
 
-    review_rules = [
-        ("non_positive_unit_price", "non-positive-price rows"),
-        ("missing_description", "missing descriptions"),
-        ("negative_quantity_non_cancellation", "negative-quantity non-cancellations"),
-        ("potential_duplicate_line", "duplicate-looking rows"),
-    ]
+    ranked = summary.sort_values(
+        ["AffectedRows", "Rule"], ascending=[False, True]
+    ).reset_index(drop=True)
+    top = ranked.iloc[0]
+    top_rule = top["Rule"]
+    top_label = labels.get(top_rule, top_rule.replace("_", " "))
+
     review_findings = []
-    for rule_name, label in review_rules:
-        count, _ = rule_result(summary, rule_name)
-        review_findings.append(f"{count:,} {label}")
+    for row in ranked.iloc[1:].itertuples(index=False):
+        if row.AffectedRows > 0:
+            label = labels.get(row.Rule, row.Rule.replace("_", " "))
+            review_findings.append(f"{int(row.AffectedRows):,} {label}")
 
     zero_rules = [
         ("zero_quantity", "zero quantities"),
@@ -93,11 +127,11 @@ def build_key_findings(summary):
             zero_findings.append(label)
 
     paragraph = (
-        f"Missing CustomerID was the most common flag ({missing_count:,} rows; "
-        f"{missing_percent:.1%}). It limits customer-level analysis but does not "
-        "prevent aggregate product or country reporting. The sample also contained "
-        f"{readable_list(review_findings)}."
+        f"The most common flag was {top_label} ({int(top['AffectedRows']):,} rows; "
+        f"{float(top['AffectedPercent']):.1%}). {explanations.get(top_rule, 'It requires review.')}"
     )
+    if review_findings:
+        paragraph += f" The sample also contained {readable_list(review_findings)}."
     if zero_findings:
         paragraph += f" No {readable_list(zero_findings, conjunction='or')} were observed."
     return paragraph
