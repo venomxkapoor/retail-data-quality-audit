@@ -1,0 +1,9 @@
+Rule,Check,WhyItMatters,Interpretation,AffectedRows,AffectedPercent
+missing_description,Description is blank,The product line is harder to review and group.,Requires review; not automatically wrong.,270,0.054
+missing_customer_id,CustomerID is blank,Customer-level analysis is not possible for that line.,Informative limitation; keep for aggregate reporting.,1433,0.2866
+potential_duplicate_line,All eight source fields match another sample row,Counting both rows may overstate transaction values.,Potential duplicate; investigate before declaring an error.,163,0.0326
+zero_quantity,Quantity is zero or cannot be read as a number,A zero-quantity product line has no clear reporting value.,Requires review.,0,0.0
+negative_quantity_non_cancellation,Quantity is negative but InvoiceNo does not start with C,It may be an adjustment that needs separate treatment.,"Suspicious, but not automatically incorrect.",261,0.0522
+non_positive_unit_price,"UnitPrice is zero, negative or unreadable",The line cannot be treated as ordinary positive-price sales.,Requires review; free items or adjustments may be valid.,366,0.0732
+cancellation_quantity_mismatch,InvoiceNo starts with C but Quantity is not negative,The cancellation marker and quantity direction disagree.,Likely inconsistent if found.,0,0.0
+invalid_or_out_of_range_date,InvoiceDate is invalid or outside the documented source period,The line may fall outside the intended reporting period.,Requires review.,0,0.0

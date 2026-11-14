@@ -1,0 +1,17 @@
+{
+  "source_rows": 541909,
+  "sample_rows": 5000,
+  "sample_seed": 352,
+  "sample_type": "4,500 simple random rows plus documented exception enrichment",
+  "cancellation_rows": 84,
+  "negative_quantity_rows": 345,
+  "reporting_view_rows": 4468,
+  "reporting_view_percent": 0.8936,
+  "exception_rows_any_rule": 1599,
+  "potential_duplicate_rows": 163,
+  "duplicate_extra_rows_excluded": 84,
+  "reporting_value_gbp": 86231.75,
+  "date_min": "2010-12-01T10:47:00",
+  "date_max": "2011-12-09T12:20:00",
+  "countries": 28
+}
