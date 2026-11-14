@@ -146,7 +146,8 @@ def make_exception_log(data, flags):
     """Create one record per flagged sample row with joined rule names."""
     flagged = flags.any(axis=1)
     exceptions = data.loc[flagged].copy()
-    exceptions.insert(0, "SampleRowNumber", exceptions.index + 2)
+    # SampleRowNumber counts data records from 1. It does not count the CSV header.
+    exceptions.insert(0, "SampleRowNumber", exceptions.index + 1)
     exceptions["TriggeredRules"] = flags.loc[flagged].apply(
         lambda row: "; ".join(row.index[row].tolist()), axis=1
     )
@@ -165,7 +166,7 @@ def make_reporting_view(data, flags, is_cancellation):
         & ~duplicate_extra
     )
     reporting = data.loc[eligible].copy()
-    reporting.insert(0, "SampleRowNumber", reporting.index + 2)
+    reporting.insert(0, "SampleRowNumber", reporting.index + 1)
     reporting["LineValueGBP"] = reporting["Quantity"] * reporting["UnitPrice"]
     return reporting, eligible, duplicate_extra
 
@@ -189,6 +190,7 @@ def run_audit(data_file=DATA_FILE):
         "source_rows": 541909,
         "sample_rows": len(data),
         "sample_seed": 352,
+        "base_random_rows": 4500,
         "sample_type": "4,500 simple random rows plus documented exception enrichment",
         "cancellation_rows": int(is_cancellation.sum()),
         "negative_quantity_rows": int(data["Quantity"].lt(0).sum()),

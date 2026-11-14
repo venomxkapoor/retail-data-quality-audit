@@ -2,6 +2,7 @@
   "source_rows": 541909,
   "sample_rows": 5000,
   "sample_seed": 352,
+  "base_random_rows": 4500,
   "sample_type": "4,500 simple random rows plus documented exception enrichment",
   "cancellation_rows": 84,
   "negative_quantity_rows": 345,

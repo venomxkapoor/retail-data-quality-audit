@@ -17,7 +17,7 @@ The reporting view adds two derived fields:
 
 | Column | Meaning |
 |---|---|
-| `SampleRowNumber` | Original row number in the supplied sample CSV, including the header offset. |
+| `SampleRowNumber` | One-based position of the data record in the supplied sample. Record 1 is the first data row; file headers are not counted. |
 | `LineValueGBP` | `Quantity * UnitPrice` for rows accepted into the positive-item sales view. |
 
 `data/sample_source_rows.csv` maps every sample record to its row number in the

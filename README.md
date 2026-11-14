@@ -53,6 +53,7 @@ with the official UCI workbook.
 - pandas
 - Python's built-in `unittest`
 - matplotlib and ReportLab for the short PDF report
+- openpyxl for the reproducible Excel workbook
 - Microsoft Excel-compatible `.xlsx` output
 
 ## Validation rules
@@ -115,6 +116,7 @@ python -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python src/audit.py
+python src/generate_workbook.py
 python src/generate_report.py
 python -m unittest discover -s tests -p "test_*.py" -v
 ```
@@ -126,9 +128,11 @@ page, then run:
 python src/create_sample.py "/path/to/Online Retail.xlsx"
 ```
 
-The audit script regenerates the two CSV outputs and the reporting view. The
-repository includes the final formatted Excel workbook as a reviewable project
-artifact.
+The audit script regenerates the CSV and JSON outputs. `generate_workbook.py`
+then rebuilds the five-sheet Excel workbook from those outputs, and
+`generate_report.py` rebuilds the PDF and charts. `SampleRowNumber` is a
+one-based data-record number: 1 means the first sample record, and file headers
+are not counted.
 
 ## Repository contents
 
